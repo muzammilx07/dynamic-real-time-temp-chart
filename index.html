@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Temperature Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 80vw;
+            height: 70vh;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="temperatureChart"></canvas>
+    </div>
+
+    <script>
+        var apiKey = '2c31f29f6ccd259cb30c18d748b3cd2f';
+        var cityLat = 44.34;
+        var cityLon = 10.99;
+
+        var ctx = document.getElementById('temperatureChart').getContext('2d');
+        var temperatureChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Temperature',
+                    backgroundColor: 'rgb(75, 192, 192)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    data: [], // Array to store temperature values
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        ticks: {
+                            stepSize: 2,
+                            callback: function (value, index, values) {
+                                return value + 's'; 
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time',
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            stepSize: 10
+                        },
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to fetch real-time temperature data from OpenWeatherMap
+        function fetchData() {
+            $.ajax({
+                url: `https://api.openweathermap.org/data/2.5/weather?lat=${cityLat}&lon=${cityLon}&appid=${apiKey}`,
+                method: 'GET',
+                success: function(response) {
+                    // Extract temperature in Celsius from the API response
+                    var currentTemperature = response.main.temp - 273.15;
+
+                    // Add timestamp and temperature to the chart data
+                    var currentTimeInSeconds = temperatureChart.data.datasets[0].data.length * 2;
+                    temperatureChart.data.datasets[0].data.push({ x: currentTimeInSeconds, y: currentTemperature });
+
+                    // Update the chart with animation
+                    updateChartWithAnimation();
+
+                    // Note: You can adjust the animation duration and easing as needed
+                },
+                error: function(error) {
+                    console.error('Error fetching data:', error);
+                }
+            });
+        }
+
+        // Function to update the chart with Anime.js animation
+        function updateChartWithAnimation() {
+            var animation = anime({
+                targets: temperatureChart.data.datasets[0].data,
+                duration: 800, 
+                easing: 'linear', 
+                round: 1, 
+                update: function() {
+                    temperatureChart.update();
+                }
+            });
+        }
+
+        
+        setInterval(fetchData, 2000);
+        fetchData();
+    </script>
+</body>
+</html>
